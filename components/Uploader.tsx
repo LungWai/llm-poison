@@ -1,20 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { StarterKit } from '@tiptap/starter-kit'
 import DOMPurify from 'dompurify'
 import { createClient } from '@/lib/supabase/client'
+import HTMLPreview from './HTMLPreview'
+import FullScreenPreview from './FullScreenPreview'
 
 export default function Uploader() {
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
+  const [showPreview, setShowPreview] = useState(false)
+  const [showFullScreen, setShowFullScreen] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('')
   const supabase = createClient()
 
   const editor = useEditor({
     extensions: [StarterKit],
     content: '<p>Hello World! 🌎️</p>',
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML()
+      const sanitized = DOMPurify.sanitize(html)
+      setPreviewHtml(sanitized)
+    },
   })
+
+  // Initialize preview on first load
+  useEffect(() => {
+    if (editor) {
+      const html = editor.getHTML()
+      const sanitized = DOMPurify.sanitize(html)
+      setPreviewHtml(sanitized)
+    }
+  }, [editor])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -83,9 +102,46 @@ export default function Uploader() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Content</label>
-        <div className="rounded-md border border-gray-300 p-2">
-          <EditorContent editor={editor} />
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium">Content</label>
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={() => setShowPreview(!showPreview)}
+              className="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+            >
+              {showPreview ? 'Hide Preview' : 'Show Preview'}
+            </button>
+            {showPreview && (
+              <button
+                type="button"
+                onClick={() => setShowFullScreen(true)}
+                className="text-sm text-indigo-600 hover:text-indigo-500 font-medium flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                Full Screen
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={showPreview ? 'grid grid-cols-2 gap-4' : ''}>
+          <div>
+            <div className="rounded-md border border-gray-300 p-2">
+              <EditorContent editor={editor} className="prose prose-sm max-w-none" />
+            </div>
+          </div>
+          {showPreview && (
+            <div>
+              <HTMLPreview 
+                content={previewHtml}
+                title={title}
+                slug={slug}
+                className="h-full"
+              />
+            </div>
+          )}
         </div>
       </div>
       <button
@@ -94,6 +150,13 @@ export default function Uploader() {
       >
         Create Entry
       </button>
+      <FullScreenPreview
+        isOpen={showFullScreen}
+        onClose={() => setShowFullScreen(false)}
+        content={previewHtml}
+        title={title}
+        slug={slug}
+      />
     </form>
   )
 }
