@@ -1,0 +1,8 @@
+{
+  "/auth/callback/route": "/auth/callback",
+  "/favicon.ico/route": "/favicon.ico",
+  "/_not-found/page": "/_not-found",
+  "/dashboard/page": "/dashboard",
+  "/login/page": "/login",
+  "/page": "/"
+}
